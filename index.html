@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏢 Break Reminder Dashboard</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#e94560">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Break Reminder">
+    <meta name="application-name" content="Break Reminder">
+    <meta name="description" content="Break reminder with rotating activities.">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1a2e'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-size='60'>🏢</text></svg>">
+
+    <style>
+        /* ===== RESET ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e; color: #fff; min-height: 100vh; overflow-x: hidden;
+        }
+
+        /* ===== INSTALL BANNER ===== */
+        .install-banner {
+            display: none; position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #e94560, #0f3460);
+            padding: 15px 25px; border-radius: 12px; z-index: 2000;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4); text-align: center;
+            max-width: 420px; width: 90%; animation: slideUp 0.5s ease;
+        }
+        .install-banner.show { display: block; }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        .install-banner p { font-size: 14px; margin-bottom: 12px; font-weight: 600; }
+        .install-banner-buttons { display: flex; gap: 10px; justify-content: center; }
+        .install-btn {
+            padding: 8px 20px; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.3s;
+        }
+        .install-btn.yes { background: #00c853; color: #fff; }
+        .install-btn.no { background: rgba(255,255,255,0.2); color: #fff; }
+        .install-btn:hover { transform: translateY(-2px); }
+
+        /* ===== RESUME BANNER ===== */
+        .resume-banner {
+            display: none; background: linear-gradient(135deg, #ff9100, #e94560);
+            padding: 12px 30px; text-align: center; font-size: 14px;
+            font-weight: 600; cursor: pointer; animation: fadeIn 0.5s ease;
+        }
+        .resume-banner.show { display: block; }
+        .resume-banner:hover { opacity: 0.9; }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 30px; background: #16213e; border-bottom: 2px solid #0f3460;
+        }
+        .header h1 { font-size: 24px; font-weight: 700; }
+        .header-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .header-btn {
+            padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px;
+            font-weight: 600; cursor: pointer; background: #0f3460; color: #fff;
+            transition: all 0.3s;
+        }
+        .header-btn:hover { background: #1b3a5c; transform: translateY(-1px); }
+
+        /* ===== TIMER ===== */
+        .timer-section {
+            text-align: center; padding: 30px 20px; background: #0d1b2a;
+            margin: 20px 30px; border-radius: 16px; border: 2px solid #0f3460;
+        }
+        .work-info { font-size: 13px; color: #a8a8b3; margin-bottom: 10px; }
+        .timer-display {
+            font-size: 80px; font-weight: 700;
+            font-family: 'Consolas', 'Courier New', monospace;
+            color: #e94560; text-shadow: 0 0 30px rgba(233,69,96,0.3);
+            letter-spacing: 4px; margin: 10px 0;
+        }
+        .progress-container {
+            width: 80%; max-width: 500px; height: 12px; background: #2a2a4a;
+            border-radius: 6px; margin: 15px auto; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%; border-radius: 6px;
+            transition: width 1s linear, background-color 0.5s; background: #00c853;
+        }
+        .status-text { font-size: 14px; color: #a8a8b3; margin: 8px 0; }
+        .next-text { font-size: 14px; color: #ff9100; font-weight: 600; margin-top: 5px; }
+
+        /* ===== CARDS ===== */
+        .cards-section { padding: 0 30px; margin-top: 20px; }
+        .cards-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+        .cards-container {
+            display: flex; gap: 15px; overflow-x: auto;
+            padding: 10px 0 15px; scroll-behavior: smooth;
+        }
+        .cards-container::-webkit-scrollbar { height: 6px; }
+        .cards-container::-webkit-scrollbar-track { background: #2a2a4a; border-radius: 3px; }
+        .cards-container::-webkit-scrollbar-thumb { background: #0f3460; border-radius: 3px; }
+        .card {
+            min-width: 180px; max-width: 180px; background: #16213e; border-radius: 12px;
+            padding: 18px 15px; text-align: center; border: 2px solid #0f3460;
+            transition: all 0.3s; flex-shrink: 0;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .card.active {
+            border-color: #e94560; background: #1b3a5c;
+            box-shadow: 0 0 20px rgba(233,69,96,0.3); animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(233,69,96,0.3); }
+            50% { box-shadow: 0 0 30px rgba(233,69,96,0.6); }
+        }
+        .card-num { font-size: 11px; font-weight: 600; text-align: left; }
+        .card-icon { font-size: 40px; margin: 8px 0; }
+        .card-title { font-size: 12px; font-weight: 700; margin: 5px 0; line-height: 1.3; }
+        .card-dur { font-size: 11px; color: #a8a8b3; margin-top: 5px; }
+        .card-status { font-size: 10px; font-weight: 700; margin-top: 8px; color: #e94560; min-height: 16px; }
+
+        /* ===== CONTROLS ===== */
+        .controls { display: flex; gap: 12px; padding: 20px 30px; flex-wrap: wrap; }
+        .ctrl-btn {
+            flex: 1; min-width: 120px; padding: 14px 20px; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 700; cursor: pointer; color: #fff; transition: all 0.3s;
+        }
+        .ctrl-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .ctrl-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .btn-start { background: #00c853; }
+        .btn-start:hover:not(:disabled) { background: #00e676; }
+        .btn-pause { background: #ff9100; }
+        .btn-pause:hover:not(:disabled) { background: #ffc107; }
+        .btn-reset { background: #e94560; }
+        .btn-reset:hover:not(:disabled) { background: #ff2e63; }
+        .btn-skip { background: #0f3460; }
+        .btn-skip:hover:not(:disabled) { background: #1b3a5c; }
+
+        /* ===== STATUS BAR ===== */
+        .status-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 30px; background: #16213e; margin: 0 30px 20px;
+            border-radius: 10px; font-size: 13px; flex-wrap: wrap; gap: 10px;
+        }
+        .work-on { color: #00c853; }
+        .work-off { color: #e94560; }
+
+        /* ===== MODALS ===== */
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .overlay.show { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal {
+            background: #1a1a2e; border-radius: 16px; max-width: 520px; width: 100%;
+            max-height: 90vh; overflow-y: auto; border: 2px solid #0f3460;
+        }
+
+        /* ===== BREAK POPUP ===== */
+        .brk-hdr { padding: 25px; text-align: center; border-radius: 14px 14px 0 0; }
+        .brk-icon { font-size: 56px; }
+        .brk-title { font-size: 24px; font-weight: 700; margin: 10px 0 5px; }
+        .brk-dur { font-size: 14px; opacity: 0.9; }
+        .brk-desc {
+            padding: 15px 25px; background: #16213e; margin: 0 20px;
+            border-radius: 10px; font-size: 14px; line-height: 1.5;
+        }
+        .brk-tips { padding: 15px 25px; background: #16213e; margin: 15px 20px; border-radius: 10px; }
+        .brk-tips h3 { color: #ff9100; margin-bottom: 10px; font-size: 14px; }
+        .brk-tips li { font-size: 13px; margin: 6px 0; padding-left: 5px; line-height: 1.4; color: #d0d0d0; }
+        .brk-done {
+            display: block; width: calc(100% - 40px); margin: 20px auto; padding: 14px;
+            background: #00c853; color: #fff; border: none; border-radius: 10px;
+            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s;
+        }
+        .brk-done:hover { background: #00e676; transform: translateY(-2px); }
+
+        /* ===== MANAGER ===== */
+        .mgr-modal { max-width: 700px; width: 100%; padding: 25px; }
+        .mgr-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+        .mgr-list { max-height: 350px; overflow-y: auto; margin-bottom: 15px; }
+        .mgr-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #16213e; border-radius: 10px; padding: 12px 15px;
+            margin-bottom: 8px; border: 2px solid #0f3460; flex-wrap: wrap; gap: 10px;
+        }
+        .mgr-item.off { opacity: 0.5; }
+        .mgr-item-info { flex: 1; min-width: 200px; }
+        .mgr-item-title { font-size: 14px; font-weight: 600; }
+        .mgr-item-desc { font-size: 11px; color: #a8a8b3; margin-top: 3px; }
+        .mgr-item-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+        .mbtn {
+            padding: 5px 12px; border: none; border-radius: 6px; font-size: 11px;
+            font-weight: 600; cursor: pointer; color: #fff; transition: all 0.2s;
+        }
+        .mbtn:hover { transform: translateY(-1px); }
+        .mbtn.tog-on { background: #ff9100; }
+        .mbtn.tog-off { background: #00c853; }
+        .mbtn.edt { background: #0f3460; }
+        .mbtn.del { background: #e94560; }
+        .mgr-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; }
+        .mgr-act {
+            padding: 10px 18px; border: none; border-radius: 8px; font-size: 13px;
+            font-weight: 700; cursor: pointer; color: #fff; transition: all 0.3s;
+        }
+        .mgr-act:hover { transform: translateY(-2px); }
+
+        /* ===== FORM ===== */
+        .frm-modal { max-width: 500px; padding: 25px; }
+        .frm-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+        .frm-grp { margin-bottom: 15px; }
+        .frm-lbl { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #a8a8b3; }
+        .frm-inp {
+            width: 100%; padding: 10px 14px; background: #16213e;
+            border: 2px solid #0f3460; border-radius: 8px; color: #fff;
+            font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.3s;
+        }
+        .frm-inp:focus { border-color: #e94560; }
+        .frm-txt {
+            width: 100%; padding: 10px 14px; background: #16213e;
+            border: 2px solid #0f3460; border-radius: 8px; color: #fff;
+            font-size: 13px; font-family: inherit; outline: none;
+            resize: vertical; min-height: 100px; transition: border-color 0.3s;
+        }
+        .frm-txt:focus { border-color: #e94560; }
+        .frm-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .frm-btn {
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 700; cursor: pointer; color: #fff; transition: all 0.3s;
+        }
+        .frm-btn:hover { transform: translateY(-2px); }
+        .frm-btn.save { background: #00c853; }
+        .frm-btn.cancel { background: #e94560; }
+
+        /* ===== LOG ===== */
+        .log-modal { max-width: 600px; padding: 25px; }
+        .log-title { font-size: 20px; font-weight: 700; margin-bottom: 15px; text-align: center; }
+        .log-content {
+            background: #16213e; border-radius: 10px; padding: 15px;
+            max-height: 350px; overflow-y: auto; font-family: 'Consolas', monospace;
+            font-size: 12px; line-height: 1.8; color: #d0d0d0;
+        }
+        .log-btns { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
+
+        /* ===== SETTINGS ===== */
+        .set-modal { max-width: 450px; padding: 25px; }
+        .set-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; text-align: center; }
+        .set-row { display: flex; gap: 10px; align-items: flex-end; }
+        .set-row .frm-grp { flex: 1; }
+        .set-preview {
+            background: #16213e; border-radius: 8px; padding: 10px 15px;
+            margin-top: 10px; text-align: center; font-size: 14px;
+            color: #ff9100; font-weight: 600;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .header { padding: 15px; flex-direction: column; gap: 10px; }
+            .header h1 { font-size: 18px; }
+            .timer-display { font-size: 48px; }
+            .controls { padding: 15px; }
+            .ctrl-btn { min-width: 100px; font-size: 13px; padding: 12px 15px; }
+            .cards-section { padding: 0 15px; }
+            .status-bar { padding: 10px 15px; font-size: 11px; }
+            .timer-section { margin: 15px; padding: 20px 15px; }
+        }
+        @media (display-mode: standalone) {
+            body { padding-top: env(safe-area-inset-top); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INSTALL BANNER -->
+    <div class="install-banner" id="installBanner">
+        <p>📲 Install Break Reminder as an app for the best experience!</p>
+        <div class="install-banner-buttons">
+            <button class="install-btn yes" onclick="installApp()">✅ Install App</button>
+            <button class="install-btn no" onclick="dismissInstall()">Later</button>
+        </div>
+    </div>
+
+    <!-- RESUME BANNER -->
+    <div class="resume-banner" id="resumeBanner" onclick="resumeFromSaved()">
+        ⏰ Timer was running! Click here to resume your session.
+    </div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>🏢 Break Reminder Dashboard</h1>
+        <div class="header-buttons">
+            <button class="header-btn" onclick="openSettings()">⏰ Settings</button>
+            <button class="header-btn" onclick="openManager()">⚙️ Activities</button>
+            <button class="header-btn" onclick="openLog()">📄 Log</button>
+        </div>
+    </div>
+
+    <!-- TIMER -->
+    <div class="timer-section">
+        <div class="work-info">📅 Mon-Fri  |  ⏰ <span id="workHrsText">8:00 AM - 5:00 PM</span></div>
+        <div class="timer-display" id="timerDisplay">02:00:00</div>
+        <div class="progress-container"><div class="progress-fill" id="progressBar"></div></div>
+        <div class="status-text" id="statusText">Press START to begin your work session</div>
+        <div class="next-text" id="nextText"></div>
+    </div>
+
+    <!-- CARDS -->
+    <div class="cards-section">
+        <div class="cards-title">📋 Activity Rotation</div>
+        <div class="cards-container" id="cardsBox"></div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls">
+        <button class="ctrl-btn btn-start" id="startBtn" onclick="startTimer()">▶️ START</button>
+        <button class="ctrl-btn btn-pause" id="pauseBtn" onclick="pauseTimer()" disabled>⏸️ PAUSE</button>
+        <button class="ctrl-btn btn-reset" id="resetBtn" onclick="resetTimer()" disabled>🔄 RESET</button>
+        <button class="ctrl-btn btn-skip" id="skipBtn" onclick="skipTimer()" disabled>⏭️ SKIP</button>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <span id="breaksCnt">📊 Breaks: 0</span>
+        <span id="workStat"></span>
+        <span id="clockNow"></span>
+    </div>
+
+    <!-- BREAK POPUP -->
+    <div class="overlay" id="breakModal">
+        <div class="modal">
+            <div class="brk-hdr" id="brkHdr">
+                <div class="brk-icon" id="brkIcon">🧘</div>
+                <div class="brk-title" id="brkTitle">STRETCH TIME!</div>
+                <div class="brk-dur" id="brkDur">⏱️ Duration: 2 minutes</div>
+            </div>
+            <div class="brk-desc" id="brkDesc"></div>
+            <div class="brk-tips"><h3>💡 Tips:</h3><ol id="brkTips"></ol></div>
+            <button class="brk-done" onclick="closeBreak()">✅ Done! Back to Work</button>
+        </div>
+    </div>
+
+    <!-- ACTIVITY MANAGER -->
+    <div class="overlay" id="mgrModal">
+        <div class="modal mgr-modal">
+            <div class="mgr-title">⚙️ Activity Manager</div>
+            <div class="mgr-list" id="mgrList"></div>
+            <div class="mgr-btns">
+                <button class="mgr-act" style="background:#00c853" onclick="openAddForm()">➕ Add</button>
+                <button class="mgr-act" style="background:#ff9100" onclick="resetDefaults()">🔁 Reset</button>
+                <button class="mgr-act" style="background:#0f3460" onclick="closeManager()">✅ Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT FORM -->
+    <div class="overlay" id="frmModal">
+        <div class="modal frm-modal">
+            <div class="frm-title" id="frmTitle">➕ Add New Activity</div>
+            <div class="frm-grp">
+                <label class="frm-lbl">Emoji Icon</label>
+                <input class="frm-inp" id="frmIcon" placeholder="e.g., 🎵" maxlength="4">
+            </div>
+            <div class="frm-grp">
+                <label class="frm-lbl">Title</label>
+                <input class="frm-inp" id="frmTitleInp" placeholder="e.g., MUSIC BREAK">
+            </div>
+            <div class="frm-grp">
+                <label class="frm-lbl">Description</label>
+                <input class="frm-inp" id="frmDescInp" placeholder="Describe the activity">
+            </div>
+            <div class="frm-grp">
+                <label class="frm-lbl">Duration</label>
+                <input class="frm-inp" id="frmDurInp" placeholder="e.g., 2 minutes">
+            </div>
+            <div class="frm-grp">
+                <label class="frm-lbl">Tips (one per line)</label>
+                <textarea class="frm-txt" id="frmTipsInp" placeholder="Enter tip 1&#10;Enter tip 2&#10;Enter tip 3"></textarea>
+            </div>
+            <div class="frm-btns">
+                <button class="frm-btn save" onclick="saveForm()">✅ Save</button>
+                <button class="frm-btn cancel" onclick="closeForm()">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="overlay" id="logModal">
+        <div class="modal log-modal">
+            <div class="log-title">📄 Break History Log</div>
+            <div class="log-content" id="logContent">No breaks logged yet.</div>
+            <div class="log-btns">
+                <button class="mgr-act" style="background:#e94560" onclick="clearLog()">🗑️ Clear</button>
+                <button class="mgr-act" style="background:#0f3460" onclick="closeLog()">✅ Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="overlay" id="setModal">
+        <div class="modal set-modal">
+            <div class="set-title">⏰ Timer Settings</div>
+            <div class="frm-grp">
+                <label class="frm-lbl">Reminder Interval</label>
+                <div class="set-row">
+                    <div class="frm-grp">
+                        <label class="frm-lbl">Hours</label>
+                        <input class="frm-inp" id="setHrs" type="number" min="0" max="8" step="1" value="2" oninput="previewInterval()">
+                    </div>
+                    <div class="frm-grp">
+                        <label class="frm-lbl">Minutes</label>
+                        <input class="frm-inp" id="setMins" type="number" min="0" max="59" step="5" value="0" oninput="previewInterval()">
+                    </div>
+                </div>
+                <div class="set-preview" id="setPreview">⏱️ Reminder every 2 hours 0 minutes</div>
+            </div>
+            <div class="frm-grp">
+                <label class="frm-lbl">Work Start Hour (24h format)</label>
+                <input class="frm-inp" id="setStart" type="number" min="0" max="23" value="8">
+            </div>
+            <div class="frm-grp">
+                <label class="frm-lbl">Work End Hour (24h format)</label>
+                <input class="frm-inp" id="setEnd" type="number" min="1" max="24" value="17">
+            </div>
+            <div class="frm-btns">
+                <button class="frm-btn save" onclick="saveSettings()">✅ Save</button>
+                <button class="frm-btn cancel" onclick="closeSettings()">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /* ================================================================
+       BREAK REMINDER DASHBOARD — COMPLETE APPLICATION
+       Features: Web Worker timer, Service Worker notifications,
+       activity rotation, custom activities, persistent state,
+       hours+minutes interval, PWA installable
+    ================================================================ */
+
+    // ===== DEFAULT ACTIVITIES =====
+    const DEFAULTS = [
+        {
+            icon:"🧘", title:"STRETCH TIME!",
+            description:"Stand up and stretch your body for 2 minutes.",
+            tips:["Raise your arms above your head and hold for 15 seconds",
+                  "Roll your shoulders forward and backward 10 times",
+                  "Touch your toes or reach as far as you can",
+                  "Do a gentle neck rotation (left → right)",
+                  "Stretch your wrists and fingers"],
+            duration:"2 minutes", enabled:true
+        },
+        {
+            icon:"🚶", title:"WALK TIME!",
+            description:"Get up and walk around for 2 minutes.",
+            tips:["Walk to the kitchen or break room",
+                  "Take a short stroll around your workspace",
+                  "Walk up and down a flight of stairs",
+                  "Step outside for some fresh air if possible",
+                  "Walk while taking deep breaths"],
+            duration:"2 minutes", enabled:true
+        },
+        {
+            icon:"👀", title:"EYE EXERCISE TIME!",
+            description:"Give your eyes a well-deserved rest.",
+            tips:["Follow the 20-20-20 rule: Look 20 feet away for 20 seconds",
+                  "Close your eyes and gently press your palms over them",
+                  "Blink rapidly 15-20 times to re-moisten your eyes",
+                  "Roll your eyes in a circular motion (clockwise, then counter)",
+                  "Focus on a near object, then a far object — repeat 5 times"],
+            duration:"1-2 minutes", enabled:true
+        },
+        {
+            icon:"💧", title:"HYDRATION TIME!",
+            description:"Drink a glass of water to stay hydrated.",
+            tips:["Drink at least one full glass of water (250ml)",
+                  "Avoid too much caffeine — alternate with water",
+                  "Add lemon or cucumber for a refreshing twist",
+                  "Check your water bottle — refill if needed",
+                  "Staying hydrated boosts focus and energy!"],
+            duration:"1 minute", enabled:true
+        }
+    ];
+
+    const COLORS = ["#e94560","#00c853","#448aff","#ff9100","#aa00ff","#00bcd4"];
+
+    // ===== STATE =====
+    let acts = [], enabled = [], idx = 0, breaks = 0;
+    let total = 7200, remain = 7200;
+    let running = false, paused = false;
+    let logs = [], editIdx = -1;
+    let intHrs = 2, intMins = 0, wStart = 8, wEnd = 17;
+    let deferPWA = null, swReg = null, worker = null;
+
+    // ===== WEB WORKER (runs in background thread) =====
+    function makeWorker() {
+        const code = `
+            let iv = null, rem = 0, end = 0;
+            self.onmessage = function(e) {
+                const d = e.data;
+                if (d.cmd === 'start') {
+                    rem = d.sec; end = Date.now() + rem * 1000;
+                    if (iv) clearInterval(iv);
+                    iv = setInterval(() => {
+                        rem = Math.round((end - Date.now()) / 1000);
+                        if (rem <= 0) {
+                            rem = 0; clearInterval(iv); iv = null;
+                            self.postMessage({t:'tick', r:0});
+                            self.postMessage({t:'break'});
+                        } else {
+                            self.postMessage({t:'tick', r:rem});
+                        }
+                    }, 500);
+                }
+                else if (d.cmd === 'pause') { if (iv) clearInterval(iv); iv = null; }
+                else if (d.cmd === 'resume') {
+                    end = Date.now() + rem * 1000;
+                    if (iv) clearInterval(iv);
+                    iv = setInterval(() => {
+                        rem = Math.round((end - Date.now()) / 1000);
+                        if (rem <= 0) {
+                            rem = 0; clearInterval(iv); iv = null;
+                            self.postMessage({t:'tick', r:0});
+                            self.postMessage({t:'break'});
+                        } else {
+                            self.postMessage({t:'tick', r:rem});
+                        }
+                    }, 500);
+                }
+                else if (d.cmd === 'stop') { if (iv) clearInterval(iv); iv = null; rem = 0; }
+                else if (d.cmd === 'skip') {
+                    rem = 0; end = Date.now();
+                    if (iv) clearInterval(iv); iv = null;
+                    self.postMessage({t:'tick', r:0});
+                    self.postMessage({t:'break'});
+                }
+                else if (d.cmd === 'sync') { self.postMessage({t:'tick', r:rem}); }
+            };
+        `;
+        const w = new Worker(URL.createObjectURL(new Blob([code], {type:'application/javascript'})));
+        w.onmessage = e => {
+            if (e.data.t === 'tick') { remain = e.data.r; updateDisplay(); saveState(); }
+            else if (e.data.t === 'break') { triggerBreak(); }
+        };
+        return w;
+    }
+
+    // ===== STATE PERSISTENCE =====
+    function saveState() {
+        if (running) {
+            localStorage.setItem('timerState', JSON.stringify({
+                on: true, paused, end: Date.now() + remain * 1000,
+                pausedRem: paused ? remain : null,
+                idx, breaks, total, at: Date.now()
+            }));
+        } else {
+            localStorage.removeItem('timerState');
+        }
+    }
+
+    function checkSaved() {
+        try {
+            const s = JSON.parse(localStorage.getItem('timerState'));
+            if (!s || !s.on) return;
+            if (Date.now() - s.at > 86400000) { localStorage.removeItem('timerState'); return; }
+
+            remain = s.paused ? s.pausedRem : Math.max(0, Math.round((s.end - Date.now()) / 1000));
+            idx = s.idx || 0; breaks = s.breaks || 0; total = s.total || total;
+
+            const banner = $('resumeBanner');
+            if (remain <= 0 && !s.paused) {
+                banner.innerHTML = "🔔 You missed a break! Click here to see your break activity.";
+            }
+            banner.classList.add('show');
+        } catch(e) {}
+    }
+
+    function resumeFromSaved() {
+        $('resumeBanner').classList.remove('show');
+        running = true;
+        $('startBtn').disabled = true;
+        $('pauseBtn').disabled = false;
+        $('resetBtn').disabled = false;
+        $('skipBtn').disabled = false;
+        $('breaksCnt').textContent = `📊 Breaks: ${breaks}`;
+        updateNext();
+
+        if (remain <= 0) {
+            triggerBreak();
+        } else {
+            worker = makeWorker();
+            worker.postMessage({cmd:'start', sec:remain});
+        }
+    }
+
+    // ===== HELPERS =====
+    function $(id) { return document.getElementById(id); }
+    function isWorkday() { const d = new Date().getDay(); return d >= 1 && d <= 5; }
+    function isWorkHrs() { const h = new Date().getHours(); return h >= wStart && h < wEnd; }
+    function isWorkTime() { return isWorkday() && isWorkHrs(); }
+    function fmtHr(h) { return h >= 12 ? `${h===12?12:h-12}:00 PM` : `${h}:00 AM`; }
+    function fmtInt() {
+        let p = [];
+        if (intHrs > 0) p.push(`${intHrs} hour${intHrs!==1?'s':''}`);
+        if (intMins > 0) p.push(`${intMins} minute${intMins!==1?'s':''}`);
+        return p.join(' ') || '0 minutes';
+    }
+
+    // ===== STORAGE =====
+    function loadActs() {
+        try {
+            const s = localStorage.getItem('breakActivities');
+            acts = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULTS));
+        } catch(e) { acts = JSON.parse(JSON.stringify(DEFAULTS)); }
+        enabled = acts.filter(a => a.enabled !== false);
+        if (!enabled.length) enabled = acts;
+    }
+
+    function saveActs() {
+        localStorage.setItem('breakActivities', JSON.stringify(acts));
+        enabled = acts.filter(a => a.enabled !== false);
+    }
+
+    function loadLogs() {
+        try { const s = localStorage.getItem('breakLog'); if (s) logs = JSON.parse(s); } catch(e) { logs = []; }
+    }
+
+    function saveLogs() { localStorage.setItem('breakLog', JSON.stringify(logs)); }
+
+    function loadSet() {
+        try {
+            const s = JSON.parse(localStorage.getItem('breakSettings'));
+            if (s) {
+                intHrs = s.hours !== undefined ? s.hours : (s.interval || 2);
+                intMins = s.minutes || 0;
+                wStart = s.workStart || 8; wEnd = s.workEnd || 17;
+            }
+        } catch(e) {}
+        total = (intHrs * 3600) + (intMins * 60);
+        if (total <= 0) total = 7200;
+        remain = total;
+        updateDisplay();
+        $('workHrsText').textContent = `${fmtHr(wStart)} - ${fmtHr(wEnd)}`;
+    }
+
+    function saveSet() {
+        localStorage.setItem('breakSettings', JSON.stringify({
+            hours:intHrs, minutes:intMins, workStart:wStart, workEnd:wEnd
+        }));
+    }
+
+    // ===== SOUND =====
+    function playSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [800,1000,1200,1000,1200].forEach((f,i) => {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.frequency.value = f; o.type = 'sine';
+                g.gain.setValueAtTime(0.3, ctx.currentTime + i*0.25);
+                g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i*0.25 + 0.25);
+                o.start(ctx.currentTime + i*0.25);
+                o.stop(ctx.currentTime + i*0.25 + 0.25);
+            });
+        } catch(e) {}
+    }
+
+    // ===== NOTIFICATIONS =====
+    function notify(title, body) {
+        // Try Service Worker notification first (works across tabs)
+        if (swReg && swReg.active) {
+            swReg.active.postMessage({type:'SHOW_NOTIFICATION', title, body});
+            return;
+        }
+        // Fallback to direct notification
+        if ("Notification" in window && Notification.permission === "granted") {
+            try {
+                const n = new Notification(title, {body, requireInteraction:true, tag:'break-reminder', renotify:true});
+                n.onclick = () => { window.focus(); n.close(); };
+            } catch(e) {
+                if (swReg) swReg.showNotification(title, {body, requireInteraction:true, tag:'break-reminder'});
+            }
+        }
+    }
+
+    // ===== TIMER =====
+    function startTimer() {
+        if (!enabled.length) { alert("⚠️ No enabled activities."); return; }
+        if (!isWorkTime() && !confirm(`Outside work hours.\n\nStart anyway?`)) return;
+
+        running = true; paused = false; remain = total;
+        $('startBtn').disabled = true;
+        $('pauseBtn').disabled = false;
+        $('resetBtn').disabled = false;
+        $('skipBtn').disabled = false;
+        updateNext();
+
+        if (worker) worker.terminate();
+        worker = makeWorker();
+        worker.postMessage({cmd:'start', sec:remain});
+        saveState();
+    }
+
+    function pauseTimer() {
+        if (paused) {
+            paused = false;
+            $('pauseBtn').textContent = "⏸️ PAUSE";
+            $('statusText').textContent = "⏳ Timer resumed";
+            $('statusText').style.color = "#00c853";
+            if (worker) worker.postMessage({cmd:'resume'});
+        } else {
+            paused = true;
+            $('pauseBtn').textContent = "▶️ RESUME";
+            $('statusText').textContent = "⏸️ Timer paused";
+            $('statusText').style.color = "#ff9100";
+            if (worker) worker.postMessage({cmd:'pause'});
+        }
+        saveState();
+    }
+
+    function resetTimer() {
+        running = false; paused = false;
+        if (worker) { worker.postMessage({cmd:'stop'}); worker.terminate(); worker = null; }
+        remain = total; breaks = 0; idx = 0;
+        localStorage.removeItem('timerState');
+
+        updateDisplay();
+        $('statusText').textContent = "Press START to begin your work session";
+        $('statusText').style.color = "#a8a8b3";
+        $('nextText').textContent = "";
+        $('breaksCnt').textContent = "📊 Breaks: 0";
+        $('progressBar').style.width = "0%";
+        $('startBtn').disabled = false;
+        $('pauseBtn').disabled = true;
+        $('pauseBtn').textContent = "⏸️ PAUSE";
+        $('resetBtn').disabled = true;
+        $('skipBtn').disabled = true;
+        document.title = "🏢 Break Reminder Dashboard";
+
+        loadActs(); renderCards(); clearActive();
+    }
+
+    function skipTimer() {
+        if (running && !paused && worker) worker.postMessage({cmd:'skip'});
+    }
+
+    function updateDisplay() {
+        const h = Math.floor(remain/3600);
+        const m = Math.floor((remain%3600)/60);
+        const s = remain%60;
+        $('timerDisplay').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+        const elapsed = total - remain;
+        const pct = total > 0 ? (elapsed/total)*100 : 0;
+        const pb = $('progressBar');
+        pb.style.width = pct + "%";
+        pb.style.background = pct < 50 ? "#00c853" : pct < 80 ? "#ff9100" : "#e94560";
+
+        if (running && !paused && remain > 0) {
+            const ml = Math.floor(remain/60);
+            $('statusText').textContent = `⏳ ${ml} min remaining | Working hard!`;
+            $('statusText').style.color = "#00c853";
+            document.title = `⏳ ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} - Break Reminder`;
+        }
+    }
+
+    function updateNext() {
+        const a = enabled[idx % enabled.length];
+        $('nextText').textContent = `Next: ${a.icon} ${a.title}`;
+    }
+
+    // ===== BREAK =====
+    function triggerBreak() {
+        const a = enabled[idx % enabled.length];
+        const c = COLORS[idx % COLORS.length];
+
+        breaks++;
+        $('breaksCnt').textContent = `📊 Breaks: ${breaks}`;
+        logs.push(`${new Date().toLocaleString()} - ${a.icon} ${a.title}`);
+        saveLogs();
+
+        highlightCard(idx % enabled.length);
+        playSound();
+        notify(`${a.icon} ${a.title}`, `${a.description}\n⏱️ Duration: ${a.duration}`);
+
+        document.title = `🔔 BREAK! - ${a.title}`;
+        $('brkHdr').style.background = c;
+        $('brkIcon').textContent = a.icon;
+        $('brkTitle').textContent = a.title;
+        $('brkDur').textContent = `⏱️ Duration: ${a.duration}`;
+        $('brkDesc').textContent = `📝 ${a.description}`;
+
+        const tips = $('brkTips');
+        tips.innerHTML = '';
+        a.tips.forEach(t => { const li = document.createElement('li'); li.textContent = t; tips.appendChild(li); });
+
+        $('breakModal').classList.add('show');
+        $('timerDisplay').textContent = "BREAK!";
+        $('statusText').textContent = `🔔 ${a.icon} ${a.title}`;
+        $('statusText').style.color = "#e94560";
+
+        window.focus();
+        saveState();
+    }
+
+    function closeBreak() {
+        $('breakModal').classList.remove('show');
+        clearActive();
+        idx++; remain = total;
+        document.title = "🏢 Break Reminder Dashboard";
+        updateNext(); updateDisplay();
+
+        if (worker) worker.terminate();
+        worker = makeWorker();
+        worker.postMessage({cmd:'start', sec:remain});
+        saveState();
+    }
+
+    // ===== CARDS =====
+    function renderCards() {
+        const box = $('cardsBox');
+        box.innerHTML = '';
+        enabled.forEach((a,i) => {
+            const c = COLORS[i % COLORS.length];
+            const d = document.createElement('div');
+            d.className = 'card'; d.id = `card-${i}`; d.style.borderColor = c;
+            d.innerHTML = `
+                <div class="card-num" style="color:${c}">Break #${i+1}</div>
+                <div class="card-icon">${a.icon}</div>
+                <div class="card-title">${a.title.replace('!','')}</div>
+                <div class="card-dur">⏱️ ${a.duration}</div>
+                <div class="card-status" id="cs-${i}"></div>`;
+            box.appendChild(d);
+        });
+    }
+
+    function highlightCard(i) {
+        clearActive();
+        const c = $(`card-${i}`);
+        if (c) { c.classList.add('active'); const s = $(`cs-${i}`); if (s) s.textContent = "🔔 ACTIVE NOW"; }
+    }
+
+    function clearActive() {
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+        enabled.forEach((_,i) => { const s = $(`cs-${i}`); if (s) s.textContent = ""; });
+    }
+
+    // ===== STATUS BAR =====
+    function updateStatus() {
+        const now = new Date();
+        $('clockNow').textContent = `🕐 ${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+        const ws = $('workStat');
+        if (isWorkTime()) { ws.textContent = "🟢 Work Hours Active"; ws.className = "work-on"; }
+        else { ws.textContent = "🔴 Outside Work Hours"; ws.className = "work-off"; }
+    }
+
+    // ===== MANAGER =====
+    function openManager() { renderMgr(); $('mgrModal').classList.add('show'); }
+    function closeManager() {
+        $('mgrModal').classList.remove('show');
+        loadActs(); renderCards(); if (running) updateNext();
+    }
+
+    function renderMgr() {
+        const list = $('mgrList');
+        list.innerHTML = '';
+        acts.forEach((a,i) => {
+            const on = a.enabled !== false;
+            const c = COLORS[i % COLORS.length];
+            const d = document.createElement('div');
+            d.className = `mgr-item ${on?'':'off'}`;
+            d.style.borderColor = on ? c : '#555';
+            d.innerHTML = `
+                <div class="mgr-item-info">
+                    <div class="mgr-item-title">${on?'✅':'❌'} ${a.icon} ${a.title} | ⏱️ ${a.duration} | 💡 ${a.tips.length} tips</div>
+                    <div class="mgr-item-desc">📝 ${a.description}</div>
+                </div>
+                <div class="mgr-item-btns">
+                    <button class="mbtn ${on?'tog-on':'tog-off'}" onclick="toggleAct(${i})">🔄 ${on?'Disable':'Enable'}</button>
+                    <button class="mbtn edt" onclick="openEditForm(${i})">✏️ Edit</button>
+                    <button class="mbtn del" onclick="delAct(${i})">❌ Del</button>
+                </div>`;
+            list.appendChild(d);
+        });
+    }
+
+    function toggleAct(i) { acts[i].enabled = acts[i].enabled === false; saveActs(); renderMgr(); }
+    function delAct(i) { if (confirm(`Delete "${acts[i].icon} ${acts[i].title}"?`)) { acts.splice(i,1); saveActs(); renderMgr(); } }
+    function resetDefaults() { if (confirm("Reset all activities to defaults?")) { acts = JSON.parse(JSON.stringify(DEFAULTS)); saveActs(); renderMgr(); } }
+
+    // ===== ADD/EDIT FORM =====
+    function openAddForm() {
+        editIdx = -1;
+        $('frmTitle').textContent = "➕ Add New Activity";
+        $('frmIcon').value = ""; $('frmTitleInp').value = "";
+        $('frmDescInp').value = ""; $('frmDurInp').value = "";
+        $('frmTipsInp').value = "";
+        $('frmModal').classList.add('show');
+    }
+
+    function openEditForm(i) {
+        editIdx = i; const a = acts[i];
+        $('frmTitle').textContent = `✏️ Edit: ${a.icon} ${a.title}`;
+        $('frmIcon').value = a.icon;
+        $('frmTitleInp').value = a.title.replace('!','');
+        $('frmDescInp').value = a.description;
+        $('frmDurInp').value = a.duration;
+        $('frmTipsInp').value = a.tips.join('\n');
+        $('frmModal').classList.add('show');
+    }
+
+    function closeForm() { $('frmModal').classList.remove('show'); }
+
+    function saveForm() {
+        const icon = $('frmIcon').value.trim() || "⭐";
+        let title = $('frmTitleInp').value.trim().toUpperCase();
+        const desc = $('frmDescInp').value.trim();
+        const dur = $('frmDurInp').value.trim() || "2 minutes";
+        const tips = $('frmTipsInp').value.trim().split('\n').filter(t => t.trim());
+
+        if (!title) { alert("⚠️ Title cannot be empty."); return; }
+        if (!title.endsWith('!')) title += '!';
+
+        const data = {icon, title, description:desc, duration:dur, tips:tips.length?tips:["Enjoy your break!"], enabled:true};
+
+        if (editIdx >= 0) { data.enabled = acts[editIdx].enabled; acts[editIdx] = data; }
+        else acts.push(data);
+
+        saveActs(); closeForm(); renderMgr();
+        alert(`✅ Activity ${editIdx >= 0 ? 'updated' : 'added'}!`);
+    }
+
+    // ===== LOG =====
+    function openLog() {
+        $('logContent').innerHTML = logs.length > 0
+            ? logs.map(e => `<div style="padding:3px 0;border-bottom:1px solid #2a2a4a">${e}</div>`).join('')
+            : "No breaks logged yet.";
+        $('logModal').classList.add('show');
+    }
+    function closeLog() { $('logModal').classList.remove('show'); }
+    function clearLog() { if (confirm("Clear all break history?")) { logs = []; saveLogs(); $('logContent').textContent = "Log cleared."; } }
+
+    // ===== SETTINGS =====
+    function openSettings() {
+        $('setHrs').value = intHrs; $('setMins').value = intMins;
+        $('setStart').value = wStart; $('setEnd').value = wEnd;
+        previewInterval();
+        $('setModal').classList.add('show');
+    }
+    function closeSettings() { $('setModal').classList.remove('show'); }
+
+    function previewInterval() {
+        const h = parseInt($('setHrs').value) || 0;
+        const m = parseInt($('setMins').value) || 0;
+        const p = $('setPreview');
+        const tm = h*60 + m;
+        let txt = "⏱️ Reminder every ";
+        let parts = [];
+        if (h > 0) parts.push(`${h} hour${h!==1?'s':''}`);
+        if (m > 0) parts.push(`${m} minute${m!==1?'s':''}`);
+        txt += parts.length ? parts.join(' ') : '0 minutes';
+        txt += ` (${tm} min total)`;
+        p.textContent = txt;
+        p.style.color = tm <= 0 ? "#e94560" : "#ff9100";
+        if (tm <= 0) p.textContent += " ⚠️ Must be > 0";
+    }
+
+    function saveSettings() {
+        const h = parseInt($('setHrs').value) || 0;
+        const m = parseInt($('setMins').value) || 0;
+        const s = parseInt($('setStart').value);
+        const e = parseInt($('setEnd').value);
+        const tm = h*60 + m;
+
+        if (tm <= 0) { alert("⚠️ Interval must be > 0 minutes."); return; }
+        if (tm > 480) { alert("⚠️ Max 8 hours."); return; }
+        if (isNaN(s) || s < 0 || s > 23) { alert("⚠️ Start: 0-23"); return; }
+        if (isNaN(e) || e < 1 || e > 24 || e <= s) { alert("⚠️ End must be after start"); return; }
+
+        intHrs = h; intMins = m; wStart = s; wEnd = e;
+        total = h*3600 + m*60; remain = total;
+
+        saveSet(); updateDisplay();
+        $('workHrsText').textContent = `${fmtHr(wStart)} - ${fmtHr(wEnd)}`;
+        closeSettings();
+
+        if (running) { resetTimer(); alert(`✅ Saved! Interval: ${fmtInt()}. Timer reset.`); }
+        else alert(`✅ Saved! Interval: ${fmtInt()}.`);
+    }
+
+    // ===== PWA =====
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault(); deferPWA = e;
+        $('installBanner').classList.add('show');
+    });
+    window.addEventListener('appinstalled', () => {
+        $('installBanner').classList.remove('show'); deferPWA = null;
+    });
+    function installApp() {
+        if (deferPWA) {
+            deferPWA.prompt();
+            deferPWA.userChoice.then(() => { deferPWA = null; $('installBanner').classList.remove('show'); });
+        }
+    }
+    function dismissInstall() { $('installBanner').classList.remove('show'); }
+
+    // ===== SERVICE WORKER =====
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(r => { swReg = r; console.log('✅ SW registered'); })
+                .catch(e => console.log('⚠️ SW failed:', e));
+        });
+    }
+
+    // ===== VISIBILITY & CLOSE =====
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && running && worker) {
+            worker.postMessage({cmd:'sync'});
+        }
+    });
+
+    window.addEventListener('beforeunload', e => {
+        if (running) {
+            saveState();
+            e.preventDefault();
+            e.returnValue = '⏰ Timer is running! Are you sure?';
+            return e.returnValue;
+        }
+    });
+
+    // Save state every 10 seconds
+    setInterval(() => { if (running) saveState(); }, 10000);
+
+    // ===== INIT =====
+    function init() {
+        loadSet(); loadActs(); loadLogs();
+        renderCards(); updateStatus();
+        setInterval(updateStatus, 1000);
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+        checkSaved();
+    }
+
+    init();
+    </script>
+</body>
+</html>
